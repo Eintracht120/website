@@ -10,220 +10,265 @@
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #0f0f0f;
-      color: #e0e0e0;
-      min-height: 100vh;
-    }
+    body { font-family: 'Inter', sans-serif; background: #0f0f0f; color: #e0e0e0; }
+
+    .hidden { display: none !important; }
 
     /* ── Gate ── */
     #gate {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      gap: 0.75rem;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh; gap: 0.75rem;
     }
-
-    #gate.hidden { display: none; }
-    #app.hidden  { display: none; }
-
     #gate h1 { font-size: 1.25rem; color: #888; font-weight: 500; margin-bottom: 0.5rem; }
-
-    #gate input, #gate button {
-      font-family: inherit;
-      font-size: 0.95rem;
-      width: 280px;
-      padding: 0.8rem 1.25rem;
-      border-radius: 10px;
-      border: 1px solid #2a2a2a;
-      background: #1a1a1a;
-      color: #e0e0e0;
-      outline: none;
-      text-align: center;
+    #gate input, #enter-btn {
+      font-family: inherit; font-size: 0.95rem; width: 280px;
+      padding: 0.8rem 1.25rem; border-radius: 10px; border: 1px solid #2a2a2a;
+      background: #1a1a1a; color: #e0e0e0; outline: none; text-align: center;
     }
-
     #gate input:focus { border-color: #444; }
-
-    #gate button {
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.2s, border-color 0.2s;
-    }
-
-    #gate button:hover { background: #222; border-color: #444; }
-
+    #enter-btn { cursor: pointer; font-weight: 500; transition: background 0.2s, border-color 0.2s; }
+    #enter-btn:hover { background: #222; border-color: #444; }
     .gate-error { color: #e05555; font-size: 0.85rem; }
 
-    /* ── App shell ── */
-    #app { max-width: 640px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    /* ── App layout ── */
+    #app { display: flex; height: 100vh; overflow: hidden; }
 
-    .back { display: inline-block; color: #555; font-size: 0.85rem; text-decoration: none; margin-bottom: 2rem; transition: color 0.2s; }
-    .back:hover { color: #e0e0e0; }
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 260px; flex-shrink: 0; height: 100vh; overflow-y: auto;
+      background: #0a0a0a; border-right: 1px solid #1a1a1a;
+      display: flex; flex-direction: column; padding: 1.25rem 0.875rem; gap: 0.15rem;
+    }
+    .sidebar-back {
+      font-size: 0.78rem; color: #3a3a3a; text-decoration: none;
+      display: block; margin-bottom: 0.4rem; transition: color 0.2s;
+    }
+    .sidebar-back:hover { color: #777; }
+    .sidebar-title { font-size: 0.9rem; font-weight: 600; color: #fff; margin-bottom: 1rem; padding-left: 0.25rem; }
+
+    #new-trip-btn {
+      width: 100%; background: none; border: 1px dashed #242424;
+      border-radius: 7px; color: #4a4a4a; cursor: pointer; font-family: inherit;
+      font-size: 0.82rem; padding: 0.5rem 0.75rem; text-align: left;
+      transition: border-color 0.2s, color 0.2s; margin-bottom: 0.5rem;
+    }
+    #new-trip-btn:hover { border-color: #3a3a3a; color: #888; }
+
+    #new-trip-form {
+      background: #111; border: 1px solid #1e1e1e; border-radius: 8px;
+      padding: 0.75rem; margin-bottom: 0.75rem;
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+    #new-trip-form input {
+      background: #0f0f0f; border: 1px solid #252525; border-radius: 6px;
+      color: #e0e0e0; font-family: inherit; font-size: 0.82rem;
+      padding: 0.45rem 0.65rem; outline: none; width: 100%;
+    }
+    #new-trip-form input:focus { border-color: #3a3a3a; }
+    .ntf-row { display: flex; gap: 0.35rem; }
+    .ntf-row button {
+      flex: 1; background: #1a1a1a; border: 1px solid #252525; border-radius: 6px;
+      color: #e0e0e0; cursor: pointer; font-family: inherit; font-size: 0.8rem;
+      padding: 0.4rem 0; transition: background 0.2s;
+    }
+    .ntf-row button:hover { background: #222; }
+
+    /* Trip list */
+    #trip-list { list-style: none; flex: 1; }
+    .trip-item {
+      display: flex; align-items: flex-start; gap: 0.35rem; padding: 0.55rem 0.65rem;
+      border-radius: 7px; cursor: pointer; transition: background 0.15s; margin-bottom: 0.1rem;
+    }
+    .trip-item:hover  { background: #131313; }
+    .trip-item.active { background: #171717; }
+    .trip-item-body   { flex: 1; min-width: 0; }
+    .trip-item-name {
+      font-size: 0.85rem; font-weight: 500; color: #ccc;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .trip-item.active .trip-item-name { color: #fff; }
+    .trip-item-sub {
+      font-size: 0.73rem; color: #3a3a3a; margin-top: 0.1rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .trip-del {
+      background: none; border: none; color: #2a2a2a; cursor: pointer;
+      font-size: 1rem; line-height: 1; padding: 0.1rem 0.15rem;
+      opacity: 0; transition: color 0.2s, opacity 0.2s; flex-shrink: 0; margin-top: 1px;
+    }
+    .trip-item:hover .trip-del { opacity: 1; }
+    .trip-del:hover { color: #c04040; }
+    .sidebar-empty { font-size: 0.8rem; color: #2e2e2e; padding: 0.4rem 0.65rem; }
+
+    /* ── Main ── */
+    #main { flex: 1; height: 100vh; overflow-y: auto; }
+
+    #no-trip {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; color: #2e2e2e; font-size: 0.9rem;
+    }
+
+    #trip-view { max-width: 620px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
 
     .trip-header { margin-bottom: 2rem; }
-    .trip-header h1 { font-size: 1.5rem; font-weight: 600; color: #fff; }
-    .trip-header p { color: #666; font-size: 0.9rem; margin-top: 0.3rem; }
+    .trip-header h1 { font-size: 1.4rem; font-weight: 600; color: #fff; }
+    .trip-header p  { color: #555; font-size: 0.875rem; margin-top: 0.3rem; }
 
-    /* ── Add form ── */
-    .add-form {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.75rem;
-      flex-wrap: wrap;
-    }
-
+    .add-form { display: flex; gap: 0.5rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
     .add-form input {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      color: #e0e0e0;
-      font-family: inherit;
-      font-size: 0.9rem;
-      padding: 0.65rem 1rem;
-      outline: none;
-      transition: border-color 0.2s;
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px;
+      color: #e0e0e0; font-family: inherit; font-size: 0.9rem;
+      padding: 0.65rem 1rem; outline: none; transition: border-color 0.2s;
     }
-
     .add-form input:focus { border-color: #444; }
-    .add-form input[name="item"] { flex: 2 1 160px; }
-    .add-form input[name="assignee"] { flex: 1 1 120px; }
-
+    .add-form input[name="item"]     { flex: 2 1 160px; }
+    .add-form input[name="assignee"] { flex: 1 1 110px; }
     .add-form button {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      color: #e0e0e0;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
-      padding: 0.65rem 1.25rem;
-      transition: background 0.2s, border-color 0.2s;
-      white-space: nowrap;
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px;
+      color: #e0e0e0; cursor: pointer; font-family: inherit; font-size: 0.9rem;
+      font-weight: 500; padding: 0.65rem 1.25rem;
+      transition: background 0.2s, border-color 0.2s; white-space: nowrap;
     }
-
     .add-form button:hover { background: #222; border-color: #444; }
 
-    /* ── Progress ── */
     .progress { margin-bottom: 1.75rem; }
     .progress-bar { background: #1a1a1a; border-radius: 999px; height: 4px; overflow: hidden; margin-bottom: 0.4rem; }
-    .progress-fill { background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; border-radius: 999px; transition: width 0.4s; }
+    .progress-fill { background: linear-gradient(90deg,#667eea,#764ba2); height: 100%; border-radius: 999px; transition: width 0.4s; }
     .progress-label { font-size: 0.8rem; color: #555; }
 
-    /* ── Checklist ── */
     .section-label {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-      color: #444;
-      margin-bottom: 0.75rem;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.09em;
+      text-transform: uppercase; color: #3a3a3a; margin-bottom: 0.75rem;
     }
 
     .checklist { list-style: none; display: flex; flex-direction: column; gap: 0.45rem; }
-
     .checklist-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      background: #141414;
-      border: 1px solid #1e1e1e;
-      border-radius: 8px;
-      transition: opacity 0.25s;
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+      background: #141414; border: 1px solid #1e1e1e; border-radius: 8px; transition: opacity 0.25s;
     }
-
     .checklist-item.checked { opacity: 0.4; }
-
-    .checklist-item input[type="checkbox"] {
-      accent-color: #667eea;
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
+    .checklist-item input[type="checkbox"] { accent-color: #667eea; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
     .item-text { flex: 1; font-size: 0.9rem; }
     .item-text.crossed { text-decoration: line-through; color: #555; }
-
     .item-assignee {
-      font-size: 0.78rem;
-      color: #667eea;
-      background: rgba(102, 126, 234, 0.1);
-      padding: 0.15rem 0.55rem;
-      border-radius: 999px;
-      white-space: nowrap;
+      font-size: 0.78rem; color: #667eea; background: rgba(102,126,234,0.1);
+      padding: 0.15rem 0.55rem; border-radius: 999px; white-space: nowrap;
     }
-
     .item-delete {
-      background: none;
-      border: none;
-      color: #333;
-      cursor: pointer;
-      font-size: 1.1rem;
-      line-height: 1;
-      padding: 0 0.2rem;
-      transition: color 0.2s;
-      flex-shrink: 0;
+      background: none; border: none; color: #333; cursor: pointer;
+      font-size: 1.1rem; line-height: 1; padding: 0 0.2rem; transition: color 0.2s; flex-shrink: 0;
     }
+    .item-delete:hover { color: #c04040; }
+    .empty-state { text-align: center; color: #2e2e2e; font-size: 0.9rem; padding: 3rem 0; }
 
-    .item-delete:hover { color: #e05555; }
+    /* ── Mobile ── */
+    #mobile-header {
+      display: none; align-items: center; gap: 0.75rem; padding: 0.7rem 1rem;
+      background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
+      position: sticky; top: 0; z-index: 20;
+    }
+    #menu-btn {
+      background: none; border: none; color: #666; cursor: pointer;
+      font-size: 1.15rem; padding: 0.2rem 0.35rem; line-height: 1;
+    }
+    #mobile-title { font-size: 0.9rem; font-weight: 500; color: #e0e0e0; }
+    #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 30; }
 
-    .empty-state {
-      text-align: center;
-      color: #333;
-      font-size: 0.9rem;
-      padding: 3rem 0;
+    @media (max-width: 680px) {
+      #app { display: block; height: auto; overflow: visible; }
+      #mobile-header { display: flex; }
+      #sidebar {
+        position: fixed; left: 0; top: 0; bottom: 0; z-index: 40;
+        transform: translateX(-100%); transition: transform 0.25s ease; width: 280px;
+      }
+      #sidebar.open { transform: translateX(0); }
+      #main { height: auto; overflow: visible; }
+      #no-trip { height: 60vh; }
     }
   </style>
 </head>
 <body>
 
-<!-- Password gate -->
+<!-- Gate -->
 <div id="gate">
-  <h1>&#127957; Camping</h1>
+  <h1>⛺ Camping</h1>
   <input type="password" id="passphrase" placeholder="Passphrase" autocomplete="off">
   <button id="enter-btn">Enter</button>
-  <span class="gate-error" id="gate-error" hidden>Incorrect passphrase.</span>
+  <span class="gate-error hidden" id="gate-error">Incorrect passphrase.</span>
 </div>
 
-<!-- Main app -->
+<!-- App -->
 <div id="app" class="hidden">
-  <a class="back" href="/">&larr; matthewviney.com</a>
 
-  <div class="trip-header">
-    <h1>Memorial Day Camping</h1>
-    <p>Kohler-Andrae State Park &middot; Sheboygan, WI &middot; May 2025</p>
-  </div>
+  <!-- Mobile header -->
+  <header id="mobile-header">
+    <button id="menu-btn">&#9776;</button>
+    <span id="mobile-title">Camping</span>
+  </header>
 
-  <form class="add-form" id="add-form">
-    <input type="text" name="item" placeholder="Item" autocomplete="off" required>
-    <input type="text" name="assignee" placeholder="Who's bringing it?" autocomplete="off">
-    <button type="submit">Add</button>
-  </form>
+  <!-- Sidebar backdrop (mobile) -->
+  <div id="overlay" class="hidden"></div>
 
-  <div class="progress" id="progress" hidden>
-    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-    <span class="progress-label" id="progress-label"></span>
-  </div>
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <a class="sidebar-back" href="/">← matthewviney.com</a>
+    <div class="sidebar-title">Camping</div>
 
-  <p class="section-label">Packing list</p>
-  <ul class="checklist" id="checklist">
-    <li class="empty-state" id="empty">No items yet — add one above.</li>
-  </ul>
+    <button id="new-trip-btn">+ New trip</button>
+
+    <form id="new-trip-form" class="hidden">
+      <input id="ntf-name" placeholder="Trip name" required autocomplete="off">
+      <input id="ntf-loc"  placeholder="Location (optional)" autocomplete="off">
+      <input id="ntf-date" placeholder="When (e.g. May 2025)" autocomplete="off">
+      <div class="ntf-row">
+        <button type="submit">Create</button>
+        <button type="button" id="cancel-trip-btn">Cancel</button>
+      </div>
+    </form>
+
+    <ul id="trip-list">
+      <li class="sidebar-empty" id="no-trips-msg">No trips yet.</li>
+    </ul>
+  </nav>
+
+  <!-- Main -->
+  <main id="main">
+    <div id="no-trip">Select a trip or create a new one.</div>
+
+    <div id="trip-view" class="hidden">
+      <div class="trip-header">
+        <h1 id="trip-title"></h1>
+        <p  id="trip-subtitle"></p>
+      </div>
+
+      <form class="add-form" id="add-form">
+        <input type="text" name="item"     placeholder="Item"                 autocomplete="off" required>
+        <input type="text" name="assignee" placeholder="Who's bringing it?"   autocomplete="off">
+        <button type="submit">Add</button>
+      </form>
+
+      <div class="progress hidden" id="progress">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <span class="progress-label" id="progress-label"></span>
+      </div>
+
+      <p class="section-label">Packing list</p>
+      <ul class="checklist" id="checklist">
+        <li class="empty-state" id="empty">No items yet — add one above.</li>
+      </ul>
+    </div>
+  </main>
 </div>
 
 <script>
   const PASSPHRASE  = 'Babushka';
   const SESSION_KEY = 'camping_auth';
+  const TRIP_KEY    = 'camping_trip';
   const PROJECT     = 'camping-26097';
   const API_KEY     = 'AIzaSyB8Oxr2kIhXu9J_i51gxnqRN1FlwFt_MGU';
-  const COLLECTION  = 'camping-memorial-day';
   const BASE        = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
 
+  // ── Gate ──────────────────────────────────────────────────────────────────
   const gate        = document.getElementById('gate');
   const appEl       = document.getElementById('app');
   const phraseInput = document.getElementById('passphrase');
@@ -241,91 +286,245 @@
     unlock();
   } else {
     enterBtn.addEventListener('click', () => {
-      if (phraseInput.value === PASSPHRASE) { unlock(); }
-      else { gateError.hidden = false; phraseInput.value = ''; }
+      if (phraseInput.value === PASSPHRASE) unlock();
+      else { gateError.classList.remove('hidden'); phraseInput.value = ''; }
     });
     phraseInput.addEventListener('keydown', e => { if (e.key === 'Enter') enterBtn.click(); });
   }
 
-  // ── Firestore REST helpers ────────────────────────────────────────────────
-  async function getItems() {
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function slugify(name) {
+    return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  // ── Firestore REST ────────────────────────────────────────────────────────
+  function toFs(obj) {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (typeof v === 'boolean') out[k] = { booleanValue: v };
+      else out[k] = { stringValue: String(v) };
+    }
+    return out;
+  }
+
+  function fromFs(row) {
+    const f = row.document.fields || {};
+    const doc = { id: row.document.name.split('/').pop() };
+    for (const [k, v] of Object.entries(f)) {
+      if      ('stringValue'  in v) doc[k] = v.stringValue;
+      else if ('booleanValue' in v) doc[k] = v.booleanValue;
+    }
+    return doc;
+  }
+
+  function eqFilter(field, val) {
+    return { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: val } } };
+  }
+
+  async function fsQuery(col, filter) {
+    const sq = { from: [{ collectionId: col }] };
+    if (filter) sq.where = filter;
     const res = await fetch(`${BASE}:runQuery?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        structuredQuery: {
-          from: [{ collectionId: COLLECTION }],
-          orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'ASCENDING' }]
-        }
-      })
+      body: JSON.stringify({ structuredQuery: sq })
     });
     const rows = await res.json();
-    return rows.filter(r => r.document).map(r => {
-      const f = r.document.fields || {};
-      return {
-        id:       r.document.name.split('/').pop(),
-        text:     f.text?.stringValue     ?? '',
-        assignee: f.assignee?.stringValue ?? '',
-        checked:  f.checked?.booleanValue ?? false
-      };
-    });
+    return rows.filter(r => r.document).map(fromFs);
   }
 
-  async function addItem(text, assignee) {
-    await fetch(`${BASE}/${COLLECTION}?key=${API_KEY}`, {
+  async function fsAdd(col, data) {
+    const res = await fetch(`${BASE}/${col}?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fields: {
-          text:      { stringValue: text },
-          assignee:  { stringValue: assignee },
-          checked:   { booleanValue: false },
-          createdAt: { timestampValue: new Date().toISOString() }
-        }
-      })
+      body: JSON.stringify({ fields: toFs(data) })
     });
+    return res.json();
   }
 
-  async function setChecked(id, checked) {
-    await fetch(`${BASE}/${COLLECTION}/${id}?updateMask.fieldPaths=checked&key=${API_KEY}`, {
+  async function fsPatch(col, id, data) {
+    const mask = Object.keys(data).map(k => `updateMask.fieldPaths=${k}`).join('&');
+    await fetch(`${BASE}/${col}/${id}?${mask}&key=${API_KEY}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { checked: { booleanValue: checked } } })
+      body: JSON.stringify({ fields: toFs(data) })
     });
   }
 
-  async function removeItem(id) {
-    await fetch(`${BASE}/${COLLECTION}/${id}?key=${API_KEY}`, { method: 'DELETE' });
+  async function fsDel(col, id) {
+    await fetch(`${BASE}/${col}/${id}?key=${API_KEY}`, { method: 'DELETE' });
   }
 
   // ── App ───────────────────────────────────────────────────────────────────
   function initApp() {
-    const form          = document.getElementById('add-form');
-    const list          = document.getElementById('checklist');
+    const sidebar       = document.getElementById('sidebar');
+    const overlay       = document.getElementById('overlay');
+    const menuBtn       = document.getElementById('menu-btn');
+    const mobileTitle   = document.getElementById('mobile-title');
+    const newTripBtn    = document.getElementById('new-trip-btn');
+    const newTripForm   = document.getElementById('new-trip-form');
+    const cancelTripBtn = document.getElementById('cancel-trip-btn');
+    const ntfName       = document.getElementById('ntf-name');
+    const ntfLoc        = document.getElementById('ntf-loc');
+    const ntfDate       = document.getElementById('ntf-date');
+    const tripList      = document.getElementById('trip-list');
+    const noTripsMsg    = document.getElementById('no-trips-msg');
+    const noTrip        = document.getElementById('no-trip');
+    const tripView      = document.getElementById('trip-view');
+    const tripTitle     = document.getElementById('trip-title');
+    const tripSubtitle  = document.getElementById('trip-subtitle');
+    const addForm       = document.getElementById('add-form');
+    const checklist     = document.getElementById('checklist');
     const emptyEl       = document.getElementById('empty');
     const progressEl    = document.getElementById('progress');
     const progressFill  = document.getElementById('progress-fill');
     const progressLabel = document.getElementById('progress-label');
 
-    let items = [];
+    let trips        = [];
+    let items        = [];
+    let activeTripId = sessionStorage.getItem(TRIP_KEY) || null;
+    let itemPoll     = null;
 
-    function render() {
-      list.querySelectorAll('.checklist-item').forEach(el => el.remove());
-      emptyEl.hidden = items.length > 0;
+    // Mobile sidebar
+    const openSidebar  = () => { sidebar.classList.add('open');    overlay.classList.remove('hidden'); };
+    const closeSidebar = () => { sidebar.classList.remove('open'); overlay.classList.add('hidden'); };
+    menuBtn.addEventListener('click', openSidebar);
+    overlay.addEventListener('click', closeSidebar);
 
-      let checkedCount = 0;
-      items.forEach(item => {
-        if (item.checked) checkedCount++;
+    // New trip form
+    newTripBtn.addEventListener('click', () => {
+      newTripForm.classList.remove('hidden');
+      newTripBtn.classList.add('hidden');
+      ntfName.focus();
+    });
+    cancelTripBtn.addEventListener('click', resetTripForm);
+    newTripForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = ntfName.value.trim();
+      const loc  = ntfLoc.value.trim();
+      const date = ntfDate.value.trim();
+      if (!name) return;
+      const slug  = slugify(name);
+      const added = await fsAdd('trips', { name, slug, location: loc, date, createdAt: new Date().toISOString() });
+      resetTripForm();
+      const newId = added.name.split('/').pop();
+      await loadTrips(newId);
+    });
 
+    function resetTripForm() {
+      newTripForm.classList.add('hidden');
+      newTripBtn.classList.remove('hidden');
+      newTripForm.reset();
+    }
+
+    // Render sidebar
+    function renderTrips() {
+      tripList.querySelectorAll('.trip-item').forEach(el => el.remove());
+      noTripsMsg.hidden = trips.length > 0;
+      trips.forEach(trip => {
         const li   = document.createElement('li');
+        li.className = 'trip-item' + (trip.id === activeTripId ? ' active' : '');
+
+        const body = document.createElement('div');
+        body.className = 'trip-item-body';
+
+        const name = document.createElement('div');
+        name.className   = 'trip-item-name';
+        name.textContent = trip.name;
+
+        const sub  = document.createElement('div');
+        sub.className   = 'trip-item-sub';
+        sub.textContent = [trip.location, trip.date].filter(Boolean).join(' · ');
+
+        body.appendChild(name);
+        if (sub.textContent) body.appendChild(sub);
+
+        const del = document.createElement('button');
+        del.className   = 'trip-del';
+        del.textContent = '×';
+        del.title       = 'Delete trip';
+        del.addEventListener('click', async e => {
+          e.stopPropagation();
+          if (!confirm(`Delete "${trip.name}" and all its items?`)) return;
+          const its = await fsQuery('items', eqFilter('tripId', trip.id));
+          await Promise.all(its.map(it => fsDel('items', it.id)));
+          await fsDel('trips', trip.id);
+          if (activeTripId === trip.id) { activeTripId = null; sessionStorage.removeItem(TRIP_KEY); }
+          await loadTrips(null);
+        });
+
+        li.appendChild(body);
+        li.appendChild(del);
+        li.addEventListener('click', () => { selectTrip(trip.id); closeSidebar(); });
+        tripList.appendChild(li);
+      });
+    }
+
+    function showNoTrip() {
+      if (itemPoll) { clearInterval(itemPoll); itemPoll = null; }
+      noTrip.classList.remove('hidden');
+      tripView.classList.add('hidden');
+      mobileTitle.textContent = 'Camping';
+    }
+
+    function selectTrip(id) {
+      activeTripId = id;
+      sessionStorage.setItem(TRIP_KEY, id);
+      renderTrips();
+      const trip = trips.find(t => t.id === id);
+      if (!trip) return;
+      history.replaceState(null, '', '#' + (trip.slug || id));
+      tripTitle.textContent    = trip.name;
+      tripSubtitle.textContent = [trip.location, trip.date].filter(Boolean).join(' · ');
+      mobileTitle.textContent  = trip.name;
+      noTrip.classList.add('hidden');
+      tripView.classList.remove('hidden');
+      if (itemPoll) clearInterval(itemPoll);
+      loadItems();
+      itemPoll = setInterval(loadItems, 4000);
+    }
+
+    async function loadTrips(selectId) {
+      const raw = await fsQuery('trips');
+      trips = raw.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+      renderTrips();
+      const hash     = window.location.hash.slice(1);
+      const fromHash = hash ? trips.find(t => t.slug === hash || t.id === hash) : null;
+      if (selectId && trips.find(t => t.id === selectId)) {
+        selectTrip(selectId);
+      } else if (fromHash) {
+        selectTrip(fromHash.id);
+      } else if (activeTripId && trips.find(t => t.id === activeTripId)) {
+        selectTrip(activeTripId);
+      } else if (trips.length > 0) {
+        selectTrip(trips[0].id);
+      } else {
+        showNoTrip();
+      }
+    }
+
+    async function loadItems() {
+      if (!activeTripId) return;
+      const raw = await fsQuery('items', eqFilter('tripId', activeTripId));
+      items = raw.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+      renderItems();
+    }
+
+    function renderItems() {
+      checklist.querySelectorAll('.checklist-item').forEach(el => el.remove());
+      emptyEl.hidden = items.length > 0;
+      let checked = 0;
+      items.forEach(item => {
+        if (item.checked) checked++;
+        const li = document.createElement('li');
         li.className = 'checklist-item' + (item.checked ? ' checked' : '');
 
         const cb = document.createElement('input');
         cb.type    = 'checkbox';
         cb.checked = item.checked;
         cb.addEventListener('change', async () => {
-          await setChecked(item.id, cb.checked);
-          await refresh();
+          await fsPatch('items', item.id, { checked: cb.checked });
+          await loadItems();
         });
 
         const span = document.createElement('span');
@@ -336,10 +535,7 @@
         del.className   = 'item-delete';
         del.textContent = '×';
         del.title       = 'Remove';
-        del.addEventListener('click', async () => {
-          await removeItem(item.id);
-          await refresh();
-        });
+        del.addEventListener('click', async () => { await fsDel('items', item.id); await loadItems(); });
 
         li.appendChild(cb);
         li.appendChild(span);
@@ -350,39 +546,31 @@
           li.appendChild(tag);
         }
         li.appendChild(del);
-        list.appendChild(li);
+        checklist.appendChild(li);
       });
 
       if (items.length > 0) {
-        progressEl.hidden = false;
-        const pct = Math.round((checkedCount / items.length) * 100);
+        progressEl.classList.remove('hidden');
+        const pct = Math.round((checked / items.length) * 100);
         progressFill.style.width  = pct + '%';
-        progressLabel.textContent = `${checkedCount} of ${items.length} items packed`;
+        progressLabel.textContent = `${checked} of ${items.length} items packed`;
       } else {
-        progressEl.hidden = true;
+        progressEl.classList.add('hidden');
       }
     }
 
-    async function refresh() {
-      items = await getItems();
-      render();
-    }
-
-    form.addEventListener('submit', async e => {
+    addForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const text     = form.item.value.trim();
-      const assignee = form.assignee.value.trim();
-      if (!text) return;
-      form.item.value     = '';
-      form.assignee.value = '';
-      await addItem(text, assignee);
-      await refresh();
+      const text     = addForm.item.value.trim();
+      const assignee = addForm.assignee.value.trim();
+      if (!text || !activeTripId) return;
+      addForm.item.value = addForm.assignee.value = '';
+      await fsAdd('items', { tripId: activeTripId, text, assignee, checked: false, createdAt: new Date().toISOString() });
+      await loadItems();
     });
 
-    refresh();
-    setInterval(refresh, 4000);
+    loadTrips(null);
   }
 </script>
-
 </body>
 </html>
