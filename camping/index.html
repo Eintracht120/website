@@ -219,15 +219,10 @@
 <script>
   const PASSPHRASE  = 'Babushka';
   const SESSION_KEY = 'camping_auth';
-
-  const firebaseConfig = {
-    apiKey:            "AIzaSyB8Oxr2kIhXu9J_i51gxnqRN1FlwFt_MGU",
-    authDomain:        "camping-26097.firebaseapp.com",
-    projectId:         "camping-26097",
-    storageBucket:     "camping-26097.firebasestorage.app",
-    messagingSenderId: "823100801599",
-    appId:             "1:823100801599:web:09d8b0fcb42e35b9c72e8a"
-  };
+  const PROJECT     = 'camping-26097';
+  const API_KEY     = 'AIzaSyB8Oxr2kIhXu9J_i51gxnqRN1FlwFt_MGU';
+  const COLLECTION  = 'camping-memorial-day';
+  const BASE        = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
 
   const gate        = document.getElementById('gate');
   const appEl       = document.getElementById('app');
@@ -235,11 +230,11 @@
   const enterBtn    = document.getElementById('enter-btn');
   const gateError   = document.getElementById('gate-error');
 
-  async function unlock() {
+  function unlock() {
     gate.classList.add('hidden');
     appEl.classList.remove('hidden');
     sessionStorage.setItem(SESSION_KEY, '1');
-    await initApp();
+    initApp();
   }
 
   if (sessionStorage.getItem(SESSION_KEY) === '1') {
@@ -252,15 +247,59 @@
     phraseInput.addEventListener('keydown', e => { if (e.key === 'Enter') enterBtn.click(); });
   }
 
-  async function initApp() {
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp }
-      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  // ── Firestore REST helpers ────────────────────────────────────────────────
+  async function getItems() {
+    const res = await fetch(`${BASE}:runQuery?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: COLLECTION }],
+          orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'ASCENDING' }]
+        }
+      })
+    });
+    const rows = await res.json();
+    return rows.filter(r => r.document).map(r => {
+      const f = r.document.fields || {};
+      return {
+        id:       r.document.name.split('/').pop(),
+        text:     f.text?.stringValue     ?? '',
+        assignee: f.assignee?.stringValue ?? '',
+        checked:  f.checked?.booleanValue ?? false
+      };
+    });
+  }
 
-    const db  = getFirestore(initializeApp(firebaseConfig));
-    const col = collection(db, 'camping-memorial-day');
-    const q   = query(col, orderBy('createdAt'));
+  async function addItem(text, assignee) {
+    await fetch(`${BASE}/${COLLECTION}?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields: {
+          text:      { stringValue: text },
+          assignee:  { stringValue: assignee },
+          checked:   { booleanValue: false },
+          createdAt: { timestampValue: new Date().toISOString() }
+        }
+      })
+    });
+  }
 
+  async function setChecked(id, checked) {
+    await fetch(`${BASE}/${COLLECTION}/${id}?updateMask.fieldPaths=checked&key=${API_KEY}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { checked: { booleanValue: checked } } })
+    });
+  }
+
+  async function removeItem(id) {
+    await fetch(`${BASE}/${COLLECTION}/${id}?key=${API_KEY}`, { method: 'DELETE' });
+  }
+
+  // ── App ───────────────────────────────────────────────────────────────────
+  function initApp() {
     const form          = document.getElementById('add-form');
     const list          = document.getElementById('checklist');
     const emptyEl       = document.getElementById('empty');
@@ -268,70 +307,80 @@
     const progressFill  = document.getElementById('progress-fill');
     const progressLabel = document.getElementById('progress-label');
 
+    let items = [];
+
+    function render() {
+      list.querySelectorAll('.checklist-item').forEach(el => el.remove());
+      emptyEl.hidden = items.length > 0;
+
+      let checkedCount = 0;
+      items.forEach(item => {
+        if (item.checked) checkedCount++;
+
+        const li   = document.createElement('li');
+        li.className = 'checklist-item' + (item.checked ? ' checked' : '');
+
+        const cb = document.createElement('input');
+        cb.type    = 'checkbox';
+        cb.checked = item.checked;
+        cb.addEventListener('change', async () => {
+          await setChecked(item.id, cb.checked);
+          await refresh();
+        });
+
+        const span = document.createElement('span');
+        span.className   = 'item-text' + (item.checked ? ' crossed' : '');
+        span.textContent = item.text;
+
+        const del = document.createElement('button');
+        del.className   = 'item-delete';
+        del.textContent = '×';
+        del.title       = 'Remove';
+        del.addEventListener('click', async () => {
+          await removeItem(item.id);
+          await refresh();
+        });
+
+        li.appendChild(cb);
+        li.appendChild(span);
+        if (item.assignee) {
+          const tag = document.createElement('span');
+          tag.className   = 'item-assignee';
+          tag.textContent = item.assignee;
+          li.appendChild(tag);
+        }
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+
+      if (items.length > 0) {
+        progressEl.hidden = false;
+        const pct = Math.round((checkedCount / items.length) * 100);
+        progressFill.style.width  = pct + '%';
+        progressLabel.textContent = `${checkedCount} of ${items.length} items packed`;
+      } else {
+        progressEl.hidden = true;
+      }
+    }
+
+    async function refresh() {
+      items = await getItems();
+      render();
+    }
+
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const text     = form.item.value.trim();
       const assignee = form.assignee.value.trim();
       if (!text) return;
-      form.item.value = '';
+      form.item.value     = '';
       form.assignee.value = '';
-      await addDoc(col, { text, assignee, checked: false, createdAt: serverTimestamp() });
+      await addItem(text, assignee);
+      await refresh();
     });
 
-    onSnapshot(q, snap => {
-      list.querySelectorAll('.checklist-item').forEach(el => el.remove());
-
-      const docs = snap.docs;
-      emptyEl.hidden = docs.length > 0;
-
-      let checkedCount = 0;
-      docs.forEach(d => {
-        const { text, assignee, checked } = d.data();
-        if (checked) checkedCount++;
-
-        const li = document.createElement('li');
-        li.className = 'checklist-item' + (checked ? ' checked' : '');
-
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.checked = !!checked;
-        cb.addEventListener('change', () =>
-          updateDoc(doc(db, 'camping-memorial-day', d.id), { checked: cb.checked }));
-
-        const span = document.createElement('span');
-        span.className = 'item-text' + (checked ? ' crossed' : '');
-        span.textContent = text;
-
-        const del = document.createElement('button');
-        del.className = 'item-delete';
-        del.textContent = '×';
-        del.title = 'Remove';
-        del.addEventListener('click', () =>
-          deleteDoc(doc(db, 'camping-memorial-day', d.id)));
-
-        li.appendChild(cb);
-        li.appendChild(span);
-
-        if (assignee) {
-          const tag = document.createElement('span');
-          tag.className = 'item-assignee';
-          tag.textContent = assignee;
-          li.appendChild(tag);
-        }
-
-        li.appendChild(del);
-        list.appendChild(li);
-      });
-
-      if (docs.length > 0) {
-        progressEl.hidden = false;
-        const pct = Math.round((checkedCount / docs.length) * 100);
-        progressFill.style.width = pct + '%';
-        progressLabel.textContent = `${checkedCount} of ${docs.length} items packed`;
-      } else {
-        progressEl.hidden = true;
-      }
-    });
+    refresh();
+    setInterval(refresh, 4000);
   }
 </script>
 
