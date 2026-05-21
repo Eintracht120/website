@@ -27,6 +27,9 @@
       gap: 0.75rem;
     }
 
+    #gate.hidden { display: none; }
+    #app.hidden  { display: none; }
+
     #gate h1 { font-size: 1.25rem; color: #888; font-weight: 500; margin-bottom: 0.5rem; }
 
     #gate input, #gate button {
@@ -188,7 +191,7 @@
 </div>
 
 <!-- Main app -->
-<div id="app" hidden>
+<div id="app" class="hidden">
   <a class="back" href="/">&larr; matthewviney.com</a>
 
   <div class="trip-header">
@@ -233,8 +236,8 @@
   const gateError   = document.getElementById('gate-error');
 
   async function unlock() {
-    gate.hidden = true;
-    appEl.hidden = false;
+    gate.classList.add('hidden');
+    appEl.classList.remove('hidden');
     sessionStorage.setItem(SESSION_KEY, '1');
     await initApp();
   }
