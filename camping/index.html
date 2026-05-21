@@ -161,6 +161,29 @@
     .item-delete:hover { color: #c04040; }
     .empty-state { text-align: center; color: #2e2e2e; font-size: 0.9rem; padding: 3rem 0; }
 
+    /* ── Assignee tag picker ── */
+    .assignee-row {
+      display: flex; flex-wrap: wrap; align-items: center;
+      gap: 0.4rem; margin: -1rem 0 1.75rem;
+    }
+    .assignee-label { font-size: 0.75rem; color: #3a3a3a; white-space: nowrap; }
+    .assignee-chip {
+      background: #1a1a1a; border: 1px solid #252525; border-radius: 999px;
+      color: #666; cursor: pointer; font-family: inherit; font-size: 0.8rem;
+      padding: 0.2rem 0.7rem; transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .assignee-chip:hover { border-color: #3a3a3a; color: #bbb; }
+    .assignee-chip.active {
+      background: rgba(102,126,234,0.12); border-color: #667eea; color: #667eea;
+    }
+    .assignee-new-input {
+      background: none; border: 1px dashed #252525; border-radius: 999px;
+      color: #555; font-family: inherit; font-size: 0.8rem; outline: none;
+      padding: 0.2rem 0.7rem; width: 7rem; transition: border-color 0.15s, color 0.15s, width 0.2s;
+    }
+    .assignee-new-input::placeholder { color: #333; }
+    .assignee-new-input:focus { border-color: #3a3a3a; color: #ccc; width: 9rem; }
+
     /* ── Notes ── */
     #trip-notes {
       width: 100%; background: none; border: none; border-bottom: 1px solid #1e1e1e;
@@ -255,10 +278,13 @@
       <textarea id="trip-notes" rows="2" placeholder="Notes..."></textarea>
 
       <form class="add-form" id="add-form">
-        <input type="text" name="item"     placeholder="Item"                 autocomplete="off" required>
-        <input type="text" name="assignee" placeholder="Who's bringing it?"   autocomplete="off">
+        <input type="text" name="item" placeholder="Item" autocomplete="off" required>
         <button type="submit">Add</button>
       </form>
+      <div class="assignee-row" id="assignee-row">
+        <span class="assignee-label">Assign to:</span>
+        <input class="assignee-new-input" id="assignee-new" placeholder="+ someone new" autocomplete="off">
+      </div>
 
       <div class="progress hidden" id="progress">
         <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
@@ -387,6 +413,8 @@
     const tripTitle     = document.getElementById('trip-title');
     const tripSubtitle  = document.getElementById('trip-subtitle');
     const notesEl       = document.getElementById('trip-notes');
+    const assigneeRow   = document.getElementById('assignee-row');
+    const assigneeNew   = document.getElementById('assignee-new');
     const addForm       = document.getElementById('add-form');
     const checklist     = document.getElementById('checklist');
     const emptyEl       = document.getElementById('empty');
@@ -394,10 +422,11 @@
     const progressFill  = document.getElementById('progress-fill');
     const progressLabel = document.getElementById('progress-label');
 
-    let trips        = [];
-    let items        = [];
-    let activeTripId = sessionStorage.getItem(TRIP_KEY) || null;
-    let itemPoll     = null;
+    let trips          = [];
+    let items          = [];
+    let activeTripId   = sessionStorage.getItem(TRIP_KEY) || null;
+    let activeAssignee = sessionStorage.getItem('camping_assignee') || '';
+    let itemPoll       = null;
 
     // Mobile sidebar
     const openSidebar  = () => { sidebar.classList.add('open');    overlay.classList.remove('hidden'); };
@@ -528,6 +557,31 @@
       renderItems();
     }
 
+    function renderAssignees() {
+      assigneeRow.querySelectorAll('.assignee-chip').forEach(el => el.remove());
+      const names = [...new Set(items.map(i => i.assignee).filter(Boolean))];
+      names.forEach(name => {
+        const btn = document.createElement('button');
+        btn.type      = 'button';
+        btn.className = 'assignee-chip' + (name === activeAssignee ? ' active' : '');
+        btn.textContent = name;
+        btn.addEventListener('click', () => {
+          activeAssignee = activeAssignee === name ? '' : name;
+          sessionStorage.setItem('camping_assignee', activeAssignee);
+          assigneeNew.value = '';
+          renderAssignees();
+        });
+        assigneeRow.insertBefore(btn, assigneeNew);
+      });
+      if (!names.includes(activeAssignee)) assigneeNew.value = activeAssignee;
+    }
+
+    assigneeNew.addEventListener('input', () => {
+      activeAssignee = assigneeNew.value.trim();
+      sessionStorage.setItem('camping_assignee', activeAssignee);
+      assigneeRow.querySelectorAll('.assignee-chip').forEach(c => c.classList.remove('active'));
+    });
+
     function renderItems() {
       checklist.querySelectorAll('.checklist-item').forEach(el => el.remove());
       emptyEl.hidden = items.length > 0;
@@ -575,15 +629,15 @@
       } else {
         progressEl.classList.add('hidden');
       }
+      renderAssignees();
     }
 
     addForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const text     = addForm.item.value.trim();
-      const assignee = addForm.assignee.value.trim();
+      const text = addForm.item.value.trim();
       if (!text || !activeTripId) return;
-      addForm.item.value = addForm.assignee.value = '';
-      await fsAdd('items', { tripId: activeTripId, text, assignee, checked: false, createdAt: new Date().toISOString() });
+      addForm.item.value = '';
+      await fsAdd('items', { tripId: activeTripId, text, assignee: activeAssignee, checked: false, createdAt: new Date().toISOString() });
       await loadItems();
     });
 
