@@ -213,14 +213,10 @@
   </ul>
 </div>
 
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import {
-    getFirestore, collection, addDoc, onSnapshot,
-    updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp
-  } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+<script>
+  const PASSPHRASE  = 'Babushka';
+  const SESSION_KEY = 'camping_auth';
 
-  // ── Firebase config — replace all REPLACE_* values ───────────────────────
   const firebaseConfig = {
     apiKey:            "AIzaSyB8Oxr2kIhXu9J_i51gxnqRN1FlwFt_MGU",
     authDomain:        "camping-26097.firebaseapp.com",
@@ -229,10 +225,6 @@
     messagingSenderId: "823100801599",
     appId:             "1:823100801599:web:09d8b0fcb42e35b9c72e8a"
   };
-  // ─────────────────────────────────────────────────────────────────────────
-
-  const PASSPHRASE  = 'Babushka';
-  const SESSION_KEY = 'camping_auth';
 
   const gate        = document.getElementById('gate');
   const appEl       = document.getElementById('app');
@@ -240,11 +232,11 @@
   const enterBtn    = document.getElementById('enter-btn');
   const gateError   = document.getElementById('gate-error');
 
-  function unlock() {
+  async function unlock() {
     gate.hidden = true;
     appEl.hidden = false;
     sessionStorage.setItem(SESSION_KEY, '1');
-    initApp();
+    await initApp();
   }
 
   if (sessionStorage.getItem(SESSION_KEY) === '1') {
@@ -257,10 +249,14 @@
     phraseInput.addEventListener('keydown', e => { if (e.key === 'Enter') enterBtn.click(); });
   }
 
-  function initApp() {
-    const db       = getFirestore(initializeApp(firebaseConfig));
-    const col      = collection(db, 'camping-memorial-day');
-    const q        = query(col, orderBy('createdAt'));
+  async function initApp() {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp }
+      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+    const db  = getFirestore(initializeApp(firebaseConfig));
+    const col = collection(db, 'camping-memorial-day');
+    const q   = query(col, orderBy('createdAt'));
 
     const form          = document.getElementById('add-form');
     const list          = document.getElementById('checklist');
