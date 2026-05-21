@@ -172,10 +172,18 @@
       color: #666; cursor: pointer; font-family: inherit; font-size: 0.8rem;
       padding: 0.2rem 0.7rem; transition: border-color 0.15s, color 0.15s, background 0.15s;
     }
-    .assignee-chip:hover { border-color: #3a3a3a; color: #bbb; }
-    .assignee-chip.active {
-      background: rgba(102,126,234,0.12); border-color: #667eea; color: #667eea;
+    .assignee-chip:hover { opacity: 0.85; }
+    .assignee-chip.active { opacity: 1; }
+
+    /* ── Filter row ── */
+    .filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
+    .filter-chip {
+      background: #1a1a1a; border: 1px solid #252525; border-radius: 999px;
+      color: #555; cursor: pointer; font-family: inherit; font-size: 0.78rem;
+      padding: 0.18rem 0.65rem; transition: all 0.15s;
     }
+    .filter-chip:hover { border-color: #3a3a3a; color: #aaa; }
+    .filter-chip.active { color: #fff; }
     .assignee-new-input {
       background: none; border: 1px dashed #252525; border-radius: 999px;
       color: #555; font-family: inherit; font-size: 0.8rem; outline: none;
@@ -291,6 +299,7 @@
         <span class="progress-label" id="progress-label"></span>
       </div>
 
+      <div id="filter-row" class="filter-row hidden"></div>
       <p class="section-label">Packing list</p>
       <ul class="checklist" id="checklist">
         <li class="empty-state" id="empty">No items yet — add one above.</li>
@@ -334,6 +343,31 @@
   // ── Helpers ───────────────────────────────────────────────────────────────
   function slugify(name) {
     return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  const COLORS = [
+    { text: '#e07878', bg: 'rgba(224,120,120,0.13)', border: 'rgba(224,120,120,0.4)' },
+    { text: '#d4a55a', bg: 'rgba(212,165,90,0.13)',  border: 'rgba(212,165,90,0.4)'  },
+    { text: '#5aad8a', bg: 'rgba(90,173,138,0.13)',  border: 'rgba(90,173,138,0.4)'  },
+    { text: '#5a9fd4', bg: 'rgba(90,159,212,0.13)',  border: 'rgba(90,159,212,0.4)'  },
+    { text: '#9b7de0', bg: 'rgba(155,125,224,0.13)', border: 'rgba(155,125,224,0.4)' },
+    { text: '#d47a9b', bg: 'rgba(212,122,155,0.13)', border: 'rgba(212,122,155,0.4)' },
+    { text: '#5ab8b8', bg: 'rgba(90,184,184,0.13)',  border: 'rgba(90,184,184,0.4)'  },
+  ];
+
+  function assigneeColor(name) {
+    if (!name) return null;
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+    return COLORS[Math.abs(h) % COLORS.length];
+  }
+
+  function applyColor(el, name, active) {
+    const c = assigneeColor(name);
+    if (!c) return;
+    el.style.color       = c.text;
+    el.style.background  = active ? c.bg    : 'transparent';
+    el.style.borderColor = active ? c.border : '#252525';
   }
 
   // ── Firestore REST ────────────────────────────────────────────────────────
@@ -415,6 +449,7 @@
     const notesEl       = document.getElementById('trip-notes');
     const assigneeRow   = document.getElementById('assignee-row');
     const assigneeNew   = document.getElementById('assignee-new');
+    const filterRow     = document.getElementById('filter-row');
     const addForm       = document.getElementById('add-form');
     const checklist     = document.getElementById('checklist');
     const emptyEl       = document.getElementById('empty');
@@ -426,6 +461,7 @@
     let items          = [];
     let activeTripId   = sessionStorage.getItem(TRIP_KEY) || null;
     let activeAssignee = sessionStorage.getItem('camping_assignee') || '';
+    let filterAssignee = null;
     let itemPoll       = null;
 
     // Mobile sidebar
@@ -557,14 +593,21 @@
       renderItems();
     }
 
+    function uniqueAssignees() {
+      return [...new Set(items.map(i => i.assignee).filter(Boolean))];
+    }
+
     function renderAssignees() {
       assigneeRow.querySelectorAll('.assignee-chip').forEach(el => el.remove());
-      const names = [...new Set(items.map(i => i.assignee).filter(Boolean))];
+      const names = uniqueAssignees();
       names.forEach(name => {
         const btn = document.createElement('button');
-        btn.type      = 'button';
-        btn.className = 'assignee-chip' + (name === activeAssignee ? ' active' : '');
+        btn.type        = 'button';
+        btn.className   = 'assignee-chip' + (name === activeAssignee ? ' active' : '');
         btn.textContent = name;
+        applyColor(btn, name, name === activeAssignee);
+        btn.addEventListener('mouseenter', () => { if (name !== activeAssignee) applyColor(btn, name, true); });
+        btn.addEventListener('mouseleave', () => { if (name !== activeAssignee) applyColor(btn, name, false); });
         btn.addEventListener('click', () => {
           activeAssignee = activeAssignee === name ? '' : name;
           sessionStorage.setItem('camping_assignee', activeAssignee);
@@ -576,18 +619,51 @@
       if (!names.includes(activeAssignee)) assigneeNew.value = activeAssignee;
     }
 
+    function renderFilter() {
+      filterRow.innerHTML = '';
+      const names = uniqueAssignees();
+      if (names.length === 0) { filterRow.classList.add('hidden'); return; }
+      filterRow.classList.remove('hidden');
+
+      const allBtn = document.createElement('button');
+      allBtn.type        = 'button';
+      allBtn.className   = 'filter-chip' + (!filterAssignee ? ' active' : '');
+      allBtn.textContent = 'All';
+      if (!filterAssignee) { allBtn.style.background = '#222'; allBtn.style.borderColor = '#3a3a3a'; }
+      allBtn.addEventListener('click', () => { filterAssignee = null; renderItems(); });
+      filterRow.appendChild(allBtn);
+
+      names.forEach(name => {
+        const btn = document.createElement('button');
+        btn.type        = 'button';
+        btn.className   = 'filter-chip' + (filterAssignee === name ? ' active' : '');
+        btn.textContent = name;
+        applyColor(btn, name, filterAssignee === name);
+        btn.addEventListener('mouseenter', () => { if (filterAssignee !== name) applyColor(btn, name, true); });
+        btn.addEventListener('mouseleave', () => { if (filterAssignee !== name) applyColor(btn, name, false); });
+        btn.addEventListener('click', () => {
+          filterAssignee = filterAssignee === name ? null : name;
+          renderItems();
+        });
+        filterRow.appendChild(btn);
+      });
+    }
+
     assigneeNew.addEventListener('input', () => {
       activeAssignee = assigneeNew.value.trim();
       sessionStorage.setItem('camping_assignee', activeAssignee);
-      assigneeRow.querySelectorAll('.assignee-chip').forEach(c => c.classList.remove('active'));
+      assigneeRow.querySelectorAll('.assignee-chip').forEach(c => {
+        c.classList.remove('active');
+        applyColor(c, c.textContent, false);
+      });
     });
 
     function renderItems() {
       checklist.querySelectorAll('.checklist-item').forEach(el => el.remove());
-      emptyEl.hidden = items.length > 0;
-      let checked = 0;
-      items.forEach(item => {
-        if (item.checked) checked++;
+      const visible = filterAssignee ? items.filter(i => i.assignee === filterAssignee) : items;
+      emptyEl.hidden = visible.length > 0;
+
+      visible.forEach(item => {
         const li = document.createElement('li');
         li.className = 'checklist-item' + (item.checked ? ' checked' : '');
 
@@ -615,21 +691,26 @@
           const tag = document.createElement('span');
           tag.className   = 'item-assignee';
           tag.textContent = item.assignee;
+          const c = assigneeColor(item.assignee);
+          if (c) { tag.style.color = c.text; tag.style.background = c.bg; tag.style.borderColor = c.border; }
           li.appendChild(tag);
         }
         li.appendChild(del);
         checklist.appendChild(li);
       });
 
+      // Progress always reflects all items, not just the filtered view
+      const totalChecked = items.filter(i => i.checked).length;
       if (items.length > 0) {
         progressEl.classList.remove('hidden');
-        const pct = Math.round((checked / items.length) * 100);
+        const pct = Math.round((totalChecked / items.length) * 100);
         progressFill.style.width  = pct + '%';
-        progressLabel.textContent = `${checked} of ${items.length} items packed`;
+        progressLabel.textContent = `${totalChecked} of ${items.length} items packed`;
       } else {
         progressEl.classList.add('hidden');
       }
       renderAssignees();
+      renderFilter();
     }
 
     addForm.addEventListener('submit', async e => {
