@@ -161,6 +161,17 @@
     .item-delete:hover { color: #c04040; }
     .empty-state { text-align: center; color: #2e2e2e; font-size: 0.9rem; padding: 3rem 0; }
 
+    /* ── Notes ── */
+    #trip-notes {
+      width: 100%; background: none; border: none; border-bottom: 1px solid #1e1e1e;
+      color: #888; font-family: inherit; font-size: 0.875rem; line-height: 1.6;
+      outline: none; resize: none; padding: 0.5rem 0 0.75rem;
+      margin-bottom: 1.75rem; min-height: 2.5rem; overflow: hidden;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #trip-notes::placeholder { color: #333; }
+    #trip-notes:focus { border-color: #333; color: #aaa; }
+
     /* ── Mobile ── */
     #mobile-header {
       display: none; align-items: center; gap: 0.75rem; padding: 0.7rem 1rem;
@@ -240,6 +251,8 @@
         <h1 id="trip-title"></h1>
         <p  id="trip-subtitle"></p>
       </div>
+
+      <textarea id="trip-notes" rows="2" placeholder="Notes..."></textarea>
 
       <form class="add-form" id="add-form">
         <input type="text" name="item"     placeholder="Item"                 autocomplete="off" required>
@@ -373,6 +386,7 @@
     const tripView      = document.getElementById('trip-view');
     const tripTitle     = document.getElementById('trip-title');
     const tripSubtitle  = document.getElementById('trip-subtitle');
+    const notesEl       = document.getElementById('trip-notes');
     const addForm       = document.getElementById('add-form');
     const checklist     = document.getElementById('checklist');
     const emptyEl       = document.getElementById('empty');
@@ -477,6 +491,10 @@
       tripTitle.textContent    = trip.name;
       tripSubtitle.textContent = [trip.location, trip.date].filter(Boolean).join(' · ');
       mobileTitle.textContent  = trip.name;
+      notesEl.value = trip.notes || '';
+      notesEl.onblur = async () => {
+        await fsPatch('trips', id, { notes: notesEl.value });
+      };
       noTrip.classList.add('hidden');
       tripView.classList.remove('hidden');
       if (itemPoll) clearInterval(itemPoll);
