@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camping · Matthew Viney</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    /* ── Gate ── */
+    #gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 0.75rem;
+    }
+
+    #gate h1 { font-size: 1.25rem; color: #888; font-weight: 500; margin-bottom: 0.5rem; }
+
+    #gate input, #gate button {
+      font-family: inherit;
+      font-size: 0.95rem;
+      width: 280px;
+      padding: 0.8rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      outline: none;
+      text-align: center;
+    }
+
+    #gate input:focus { border-color: #444; }
+
+    #gate button {
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    #gate button:hover { background: #222; border-color: #444; }
+
+    .gate-error { color: #e05555; font-size: 0.85rem; }
+
+    /* ── App shell ── */
+    #app { max-width: 640px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+    .back { display: inline-block; color: #555; font-size: 0.85rem; text-decoration: none; margin-bottom: 2rem; transition: color 0.2s; }
+    .back:hover { color: #e0e0e0; }
+
+    .trip-header { margin-bottom: 2rem; }
+    .trip-header h1 { font-size: 1.5rem; font-weight: 600; color: #fff; }
+    .trip-header p { color: #666; font-size: 0.9rem; margin-top: 0.3rem; }
+
+    /* ── Add form ── */
+    .add-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+    }
+
+    .add-form input {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.65rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .add-form input:focus { border-color: #444; }
+    .add-form input[name="item"] { flex: 2 1 160px; }
+    .add-form input[name="assignee"] { flex: 1 1 120px; }
+
+    .add-form button {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      color: #e0e0e0;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 0.65rem 1.25rem;
+      transition: background 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+
+    .add-form button:hover { background: #222; border-color: #444; }
+
+    /* ── Progress ── */
+    .progress { margin-bottom: 1.75rem; }
+    .progress-bar { background: #1a1a1a; border-radius: 999px; height: 4px; overflow: hidden; margin-bottom: 0.4rem; }
+    .progress-fill { background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; border-radius: 999px; transition: width 0.4s; }
+    .progress-label { font-size: 0.8rem; color: #555; }
+
+    /* ── Checklist ── */
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 0.75rem;
+    }
+
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 0.45rem; }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: #141414;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      transition: opacity 0.25s;
+    }
+
+    .checklist-item.checked { opacity: 0.4; }
+
+    .checklist-item input[type="checkbox"] {
+      accent-color: #667eea;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .item-text { flex: 1; font-size: 0.9rem; }
+    .item-text.crossed { text-decoration: line-through; color: #555; }
+
+    .item-assignee {
+      font-size: 0.78rem;
+      color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .item-delete {
+      background: none;
+      border: none;
+      color: #333;
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0 0.2rem;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .item-delete:hover { color: #e05555; }
+
+    .empty-state {
+      text-align: center;
+      color: #333;
+      font-size: 0.9rem;
+      padding: 3rem 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Password gate -->
+<div id="gate">
+  <h1>&#127957; Camping</h1>
+  <input type="password" id="passphrase" placeholder="Passphrase" autocomplete="off">
+  <button id="enter-btn">Enter</button>
+  <span class="gate-error" id="gate-error" hidden>Incorrect passphrase.</span>
+</div>
+
+<!-- Main app -->
+<div id="app" hidden>
+  <a class="back" href="/">&larr; matthewviney.com</a>
+
+  <div class="trip-header">
+    <h1>Memorial Day Camping</h1>
+    <p>Kohler-Andrae State Park &middot; Sheboygan, WI &middot; May 2025</p>
+  </div>
+
+  <form class="add-form" id="add-form">
+    <input type="text" name="item" placeholder="Item" autocomplete="off" required>
+    <input type="text" name="assignee" placeholder="Who's bringing it?" autocomplete="off">
+    <button type="submit">Add</button>
+  </form>
+
+  <div class="progress" id="progress" hidden>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <span class="progress-label" id="progress-label"></span>
+  </div>
+
+  <p class="section-label">Packing list</p>
+  <ul class="checklist" id="checklist">
+    <li class="empty-state" id="empty">No items yet — add one above.</li>
+  </ul>
+</div>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import {
+    getFirestore, collection, addDoc, onSnapshot,
+    updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp
+  } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  // ── Firebase config — replace all REPLACE_* values ───────────────────────
+  const firebaseConfig = {
+    apiKey:            "AIzaSyB8Oxr2kIhXu9J_i51gxnqRN1FlwFt_MGU",
+    authDomain:        "camping-26097.firebaseapp.com",
+    projectId:         "camping-26097",
+    storageBucket:     "camping-26097.firebasestorage.app",
+    messagingSenderId: "823100801599",
+    appId:             "1:823100801599:web:09d8b0fcb42e35b9c72e8a"
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const PASSPHRASE  = 'Babushka';
+  const SESSION_KEY = 'camping_auth';
+
+  const gate        = document.getElementById('gate');
+  const appEl       = document.getElementById('app');
+  const phraseInput = document.getElementById('passphrase');
+  const enterBtn    = document.getElementById('enter-btn');
+  const gateError   = document.getElementById('gate-error');
+
+  function unlock() {
+    gate.hidden = true;
+    appEl.hidden = false;
+    sessionStorage.setItem(SESSION_KEY, '1');
+    initApp();
+  }
+
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    unlock();
+  } else {
+    enterBtn.addEventListener('click', () => {
+      if (phraseInput.value === PASSPHRASE) { unlock(); }
+      else { gateError.hidden = false; phraseInput.value = ''; }
+    });
+    phraseInput.addEventListener('keydown', e => { if (e.key === 'Enter') enterBtn.click(); });
+  }
+
+  function initApp() {
+    const db       = getFirestore(initializeApp(firebaseConfig));
+    const col      = collection(db, 'camping-memorial-day');
+    const q        = query(col, orderBy('createdAt'));
+
+    const form          = document.getElementById('add-form');
+    const list          = document.getElementById('checklist');
+    const emptyEl       = document.getElementById('empty');
+    const progressEl    = document.getElementById('progress');
+    const progressFill  = document.getElementById('progress-fill');
+    const progressLabel = document.getElementById('progress-label');
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const text     = form.item.value.trim();
+      const assignee = form.assignee.value.trim();
+      if (!text) return;
+      form.item.value = '';
+      form.assignee.value = '';
+      await addDoc(col, { text, assignee, checked: false, createdAt: serverTimestamp() });
+    });
+
+    onSnapshot(q, snap => {
+      list.querySelectorAll('.checklist-item').forEach(el => el.remove());
+
+      const docs = snap.docs;
+      emptyEl.hidden = docs.length > 0;
+
+      let checkedCount = 0;
+      docs.forEach(d => {
+        const { text, assignee, checked } = d.data();
+        if (checked) checkedCount++;
+
+        const li = document.createElement('li');
+        li.className = 'checklist-item' + (checked ? ' checked' : '');
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!checked;
+        cb.addEventListener('change', () =>
+          updateDoc(doc(db, 'camping-memorial-day', d.id), { checked: cb.checked }));
+
+        const span = document.createElement('span');
+        span.className = 'item-text' + (checked ? ' crossed' : '');
+        span.textContent = text;
+
+        const del = document.createElement('button');
+        del.className = 'item-delete';
+        del.textContent = '×';
+        del.title = 'Remove';
+        del.addEventListener('click', () =>
+          deleteDoc(doc(db, 'camping-memorial-day', d.id)));
+
+        li.appendChild(cb);
+        li.appendChild(span);
+
+        if (assignee) {
+          const tag = document.createElement('span');
+          tag.className = 'item-assignee';
+          tag.textContent = assignee;
+          li.appendChild(tag);
+        }
+
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+
+      if (docs.length > 0) {
+        progressEl.hidden = false;
+        const pct = Math.round((checkedCount / docs.length) * 100);
+        progressFill.style.width = pct + '%';
+        progressLabel.textContent = `${checkedCount} of ${docs.length} items packed`;
+      } else {
+        progressEl.hidden = true;
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
